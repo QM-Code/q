@@ -6,67 +6,51 @@ It assumes you already have AWS credentials and, if needed, Amazon `q` login sta
 
 ## Installation
 
-**Note:** All commands shown assume you create the local username **q**. If you choose a different username, modify the command accordingly.
+**Note:** `install-q.sh` can create any sandbox username you choose with `-u <username>`. The examples below use `<username>` for the sandbox account and `<qhome>` for that user's home directory.
 
-Download the repo. The important files are:
+Download the repo.
 
 ```
 - README.md         This file
-- start-q.sh        Launches Amazon `q` as user **q**
+- install-q.sh      Run this first to create the sandbox user
+- start-q.sh        Template startup script for the sandbox user
 - AmazonQ.md        Bootstrap instructions automatically read by `q`
 ```
 
-### Create User **q**
+### Installation Script
+
+Run `install-q.sh`, specifying a username, e.g.
 
 ```
-sudo useradd -m -s /bin/bash q
+sudo ./install-q.sh -u <username>
 ```
 
-### Copy AWS credentials
+The installation script will do the following:
 
-Basic credentials:
-
-```
-sudo -u q mkdir -p ~q/.aws
-sudo cp ~/.aws/config ~q/.aws/config
-sudo cp ~/.aws/credentials ~q/.aws/credentials
-sudo chown -R q:q ~q/.aws
-sudo chmod 700 ~q/.aws
-sudo chmod 600 ~q/.aws/config ~q/.aws/credentials
-```
-
-If you use AWS SSO / Identity Center, also copy the SSO cache:
-
-```
-sudo mkdir -p ~q/.aws/sso
-sudo cp -r ~/.aws/sso/cache ~q/.aws/sso/
-sudo chown -R q:q ~q/.aws
-```
-
-If you want to reuse your existing Amazon `q` login instead of logging in again as user **q**, also copy Amazon `q`'s local state:
-
-```
-sudo mkdir -p ~q/.local/share
-sudo cp -r ~/.local/share/amazon-q ~q/.local/share/
-sudo chown -R q:q ~q/.local
-```
-
-### Copy Repo Files
-
-Place a copy of `start-q.sh` and `AmazonQ.md` in the directory where you want `q` to start.
-
-`start-q.sh` launches `q` from the directory where the script resides, not from the caller's current working directory.
+1. Create the specified sandbox user and home directory `<qhome>`.
+2. Copy your AWS configuration plus either static credentials or SSO cache to `<qhome>`.
+3. Copy your local Amazon `q` state to `<qhome>` if it exists.
+4. Copy `start-q.sh`, `AmazonQ.md`, and `README.md` to `<qhome>`.
+5. Set the sandbox user's primary group to your primary group, then make directories under `<qhome>` mode `770` and regular files mode `660` so both accounts can update them.
+6. Make `start-q.sh` read/execute-only so it is less likely to be edited accidentally.
 
 ## Running `start-q.sh`
 
-Running `start-q.sh` does the following:
+The installed `start-q.sh` does the following:
 
-1. Checks whether user **q** is already logged in to Amazon `q`
+1. Checks whether the sandbox user is already logged in to Amazon `q`
 2. Runs `q login` only if needed
-3. Starts `q` as user **q**
-4. Uses the directory containing `start-q.sh` as the starting directory
+3. Starts `q` as the sandbox user
+4. Starts in the sandbox user's home directory by default
+5. Accepts `-d <dir>` to start `q` in a specific directory instead
 
-This lets you place separate copies of the script in different directories, each with its own local instructions.
+Examples:
+
+```
+start-q.sh
+start-q.sh -d .
+start-q.sh -d /path/to/project
+```
 
 ## Amazon `q` Startup Behavior
 
@@ -84,16 +68,16 @@ It can also read Markdown rule files under:
 .amazonq/rules/**/*.md
 ```
 
-In this repo, `AmazonQ.md` is the main bootstrap file for local instructions. `AGENTS.md` is available if you want to add more agent-specific guidance.
+In this repo, `AmazonQ.md` is the main bootstrap file for local instructions. `AGENTS.md` is optional if you want to add more agent-specific guidance in a local copy.
 
-Note that `q` will not be able to write to directories it is started in unless they are owned by **q**.
+Note that `q` will not be able to write to directories it is started in unless they are writable by the sandbox user or its primary group.
 
-User **q** must also be able to traverse the full path to that directory.
+The sandbox user must also be able to traverse the full path to that directory.
 
-To create a directory that gives `q` read/write permissions while preserving personal ownership:
+By default, the installer makes the sandbox user's primary group match your primary group. To create a directory that both you and the sandbox user can modify while preserving personal ownership:
 
 ```
 mkdir <dir>
-chmod 775 <dir>
-sudo chgrp q <dir>
+chmod 770 <dir>
+sudo chgrp <your-primary-group> <dir>
 ```
