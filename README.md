@@ -6,7 +6,7 @@ It assumes you already have AWS credentials and, if needed, Amazon `q` login sta
 
 ## Installation
 
-**Note:** `install-q.sh` can create any sandbox username you choose with `-u <username>`. The examples below use `<username>` for the sandbox account and `<qhome>` for that user's home directory.
+**Note:** `install-q.sh` can create any sandbox username you choose with `-u <q-user>`. The examples below use `<q-user>` for the sandbox account and `<q-home>` for that user's home directory.
 
 Download the repo.
 
@@ -22,16 +22,16 @@ Download the repo.
 Run `install-q.sh`, specifying a username, e.g.
 
 ```
-sudo ./install-q.sh -u <username>
+sudo ./install-q.sh -u <q-user>
 ```
 
 The installation script will do the following:
 
-1. Create the specified sandbox user and home directory `<qhome>`.
-2. Copy your AWS configuration plus either static credentials or SSO cache to `<qhome>`.
-3. Copy your local Amazon `q` state to `<qhome>` if it exists.
-4. Copy `start-q.sh`, `AmazonQ.md`, and `README.md` to `<qhome>`.
-5. Set the sandbox user's primary group to your primary group, then make directories under `<qhome>` mode `770` and regular files mode `660` so both accounts can update them.
+1. Create the specified sandbox user and home directory `<q-home>`.
+2. Copy your AWS configuration plus either static credentials or SSO cache to `<q-home>`.
+3. Copy your local Amazon `q` state to `<q-home>` if it exists.
+4. Copy `start-q.sh`, `AmazonQ.md`, and `README.md` to `<q-home>`.
+5. Set the sandbox user's primary group to your primary group, then make directories under `<q-home>` mode `770` and regular files mode `660` so both accounts can update them.
 6. Make `start-q.sh` read/execute-only so it is less likely to be edited accidentally.
 
 ## Running `start-q.sh`
