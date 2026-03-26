@@ -14,7 +14,6 @@ Download the repo. The important files are:
 - README.md         This file
 - start-q.sh        Launches Amazon `q` as user **q**
 - AmazonQ.md        Bootstrap instructions automatically read by `q`
-- AGENTS.md         Optional extra instructions automatically read by `q`
 ```
 
 ### Create User **q**
@@ -54,7 +53,7 @@ sudo chown -R q:q ~q/.local
 
 ### Copy Repo Files
 
-Place a copy of `start-q.sh`, `AmazonQ.md`, and optionally `AGENTS.md` in the directory where you want `q` to start.
+Place a copy of `start-q.sh` and `AmazonQ.md` in the directory where you want `q` to start.
 
 `start-q.sh` launches `q` from the directory where the script resides, not from the caller's current working directory.
 
