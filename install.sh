@@ -88,9 +88,22 @@ installation_conflict() {
   local name=$1
   local path=$2
 
-  printf 'Error: installation file `%s` already exists in `%s`.\n' "$name" "$path" >&2
+  printf 'Error: installation file `%s` already exists:\n' "$name" >&2
+  printf '    %s/%s\n' "$path" "$name" >&2
   printf "Use '-f' to overwrite or -n <name> to choose another name\n" >&2
   exit 1
+}
+
+display_path() {
+  local path=$1
+
+  if [[ "$path" == "$source_home" ]]; then
+    printf '~'
+  elif [[ "$path" == "$source_home/"* ]]; then
+    printf '~%s' "${path#$source_home}"
+  else
+    printf '%s' "$path"
+  fi
 }
 
 required_repo_files=(
@@ -117,6 +130,11 @@ fi
 user_path=$(sudo -u "$source_user" -H bash -lc 'printf "%s" "$PATH"' 2>/dev/null || true)
 install_dir=""
 
+if getent passwd "$target_user" >/dev/null; then
+  echo "Error: user \"$target_user\" already exists." >&2
+  exit 1
+fi
+
 if path_contains "$local_bindir" "$user_path"; then
   install_dir=$local_bindir
 elif path_contains "$legacy_bindir" "$user_path"; then
@@ -141,11 +159,6 @@ elif [[ -e "$install_path" ]]; then
   else
     installation_conflict "$link_name" "$install_dir"
   fi
-fi
-
-if getent passwd "$target_user" >/dev/null; then
-  echo "Error: user \"$target_user\" already exists." >&2
-  exit 1
 fi
 
 has_config=false
@@ -229,8 +242,11 @@ fi
 ln -s "$target_home/start-q.sh" "$install_path"
 chown -h "$source_user:$source_group" "$install_path"
 
+display_install_path=$(display_path "$install_path")
+
 printf '\nCreated user "%s" with home directory %s.\n\n' "$target_user" "$target_home"
-printf 'Created symlink: %s -> %s/start-q.sh\n' "$install_path" "$target_home"
+printf 'Created symlink:\n'
+printf '    %s -> %s/start-q.sh\n' "$display_install_path" "$target_home"
 
 if [[ "$install_dir" == "$source_home" ]]; then
   printf '\nNo user executable directory was found in PATH (e.g. ~/bin/)\n\n'
