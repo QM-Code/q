@@ -6,23 +6,30 @@ It assumes you already have AWS credentials and, if needed, Amazon `q` login sta
 
 ## Installation
 
-**Note:** `install-q.sh` can create any sandbox username you choose with `-u <q-user>`. The examples below use `<q-user>` for the sandbox account and `<q-home>` for that user's home directory.
+**Note:** `install.sh` can create any sandbox username you choose with `-u <q-user>`. The examples below use `<q-user>` for the sandbox account and `<q-home>` for that user's home directory.
 
 Download the repo.
 
 ```
 - README.md         This file
-- install-q.sh      Run this first to create the sandbox user
+- install.sh        Run this first to create the sandbox user
 - start-q.sh        Template startup script for the sandbox user
 - AmazonQ.md        Bootstrap instructions automatically read by `q`
 ```
 
 ### Installation Script
 
-Run `install-q.sh`, specifying a username, e.g.
+Run `install.sh`, specifying a username, e.g.
 
 ```
-sudo ./install-q.sh -u <q-user>
+sudo ./install.sh -u <q-user>
+```
+
+Optional flags:
+
+```
+-n <name>    Choose a symlink name other than q-sandbox
+-f           Overwrite an existing installation file with that name
 ```
 
 The installation script will do the following:
@@ -32,6 +39,7 @@ The installation script will do the following:
 3. Copy your local Amazon `q` state to `<q-home>` if it exists.
 4. Copy `start-q.sh`, `AmazonQ.md`, and `README.md` to `<q-home>`.
 5. Set the sandbox user's primary group to your primary group, then make directories under `<q-home>` mode `770` and regular files mode `660` so both accounts can update them.
+6. Create a `q-sandbox` symlink in `~/.local/bin` if that directory is on your `PATH`, otherwise in `~/bin` if that is on your `PATH`, otherwise directly in your home directory.
 
 ## Running `start-q.sh`
 
@@ -46,9 +54,9 @@ The installed `start-q.sh` does the following:
 Examples:
 
 ```
-start-q.sh
-start-q.sh -d .
-start-q.sh -d /path/to/project
+q-sandbox
+q-sandbox -d .
+q-sandbox -d /path/to/project
 ```
 
 ## Amazon `q` Startup Behavior

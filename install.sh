@@ -1,23 +1,32 @@
 #!/bin/bash
 set -euo pipefail
 
+script_name=$(basename -- "$0")
+
 usage() {
-  cat >&2 <<'EOF'
-Usage: sudo ./install-q.sh -u <username>
-EOF
+  printf 'Usage: sudo %s -u <q-user> [-n <name>] [-f]\n' "$script_name" >&2
   exit 1
 }
 
-if [[ $# -eq 0 ]]; then
+if [[ $EUID -ne 0 || -z "${SUDO_USER:-}" || "${SUDO_USER}" == "root" ]]; then
+  echo "Error: must run as sudo" >&2
   usage
 fi
 
 target_user=""
+link_name="q-sandbox"
+force_overwrite=false
 
-while getopts ":u:" opt; do
+while getopts ":u:n:f" opt; do
   case "$opt" in
     u)
       target_user=$OPTARG
+      ;;
+    n)
+      link_name=$OPTARG
+      ;;
+    f)
+      force_overwrite=true
       ;;
     :)
       echo "Error: -$OPTARG requires a value." >&2
@@ -32,25 +41,56 @@ done
 
 shift $((OPTIND - 1))
 
-if [[ $# -ne 0 || -z "$target_user" ]]; then
+if [[ -z "$target_user" ]]; then
+  echo "Error: username must be specified" >&2
   usage
 fi
 
-if [[ $EUID -ne 0 || -z "${SUDO_USER:-}" || "${SUDO_USER}" == "root" ]]; then
-  echo "Error: run this script with sudo from the user account whose AWS and Amazon Q files should be copied." >&2
-  exit 1
+if [[ -z "$link_name" || "$link_name" == */* ]]; then
+  echo "Error: link name must be a plain file name" >&2
+  usage
+fi
+
+if [[ $# -ne 0 ]]; then
+  usage
 fi
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source_user=$SUDO_USER
 source_home=$(getent passwd "$source_user" | cut -d: -f6)
 source_group=$(id -gn "$source_user")
+local_bindir="$source_home/.local/bin"
+legacy_bindir="$source_home/bin"
 
 set_shared_tree_permissions() {
   local path=$1
 
   find "$path" -type d -exec chmod 770 {} +
   find "$path" -type f -exec chmod 660 {} +
+}
+
+path_contains() {
+  local needle=$1
+  local path_list=$2
+  local entry
+
+  IFS=: read -r -a entries <<< "$path_list"
+  for entry in "${entries[@]}"; do
+    if [[ "$entry" == "$needle" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+installation_conflict() {
+  local name=$1
+  local path=$2
+
+  printf 'Error: installation file `%s` already exists in `%s`.\n' "$name" "$path" >&2
+  printf "Use '-f' to overwrite or -n <name> to choose another name\n" >&2
+  exit 1
 }
 
 required_repo_files=(
@@ -67,11 +107,40 @@ for file in "${required_repo_files[@]}"; do
 done
 
 if (( ${#missing_repo_files[@]} > 0 )); then
-  printf 'Error: missing required repo files beside install-q.sh:\n' >&2
+  printf 'Error: missing required repo files beside install.sh:\n' >&2
   for file in "${missing_repo_files[@]}"; do
     printf '  %s\n' "$file" >&2
   done
   exit 1
+fi
+
+user_path=$(sudo -u "$source_user" -H bash -lc 'printf "%s" "$PATH"' 2>/dev/null || true)
+install_dir=""
+
+if path_contains "$local_bindir" "$user_path"; then
+  install_dir=$local_bindir
+elif path_contains "$legacy_bindir" "$user_path"; then
+  install_dir=$legacy_bindir
+else
+  install_dir=$source_home
+fi
+
+install_path="$install_dir/$link_name"
+
+if [[ -L "$install_path" ]]; then
+  if [[ -z "$(readlink -e "$install_path" || true)" ]]; then
+    rm -f -- "$install_path"
+  elif [[ "$force_overwrite" == true ]]; then
+    rm -f -- "$install_path"
+  else
+    installation_conflict "$link_name" "$install_dir"
+  fi
+elif [[ -e "$install_path" ]]; then
+  if [[ "$force_overwrite" == true ]]; then
+    rm -rf -- "$install_path"
+  else
+    installation_conflict "$link_name" "$install_dir"
+  fi
 fi
 
 if getent passwd "$target_user" >/dev/null; then
@@ -153,5 +222,20 @@ set_shared_tree_permissions "$target_home"
 chmod 770 "$target_home"
 chmod 770 "$target_home/start-q.sh"
 
+if [[ "$install_dir" != "$source_home" ]]; then
+  install -d -m 755 -o "$source_user" -g "$source_group" "$install_dir"
+fi
+
+ln -s "$target_home/start-q.sh" "$install_path"
+chown -h "$source_user:$source_group" "$install_path"
+
 printf '\nCreated user "%s" with home directory %s.\n\n' "$target_user" "$target_home"
-printf 'To start `q` in the sandboxed environment, run %s/start-q.sh\n\n' "$target_home"
+printf 'Created symlink: %s -> %s/start-q.sh\n' "$install_path" "$target_home"
+
+if [[ "$install_dir" == "$source_home" ]]; then
+  printf '\nNo user executable directory was found in PATH (e.g. ~/bin/)\n\n'
+  printf 'The %s symlink has been placed in your home directory.\n\n' "$link_name"
+  printf 'To start `q` in the sandboxed environment, run `~/%s`.\n\n' "$link_name"
+else
+  printf '\nTo start `q` in the sandboxed environment, run `%s`.\n\n' "$link_name"
+fi

@@ -4,9 +4,7 @@ set -euo pipefail
 sandbox_user=q
 
 usage() {
-  cat >&2 <<'EOF'
-Usage: ./start-q.sh [-d <dir>]
-EOF
+  printf 'Usage: %s [-d <dir>]\n' "$(basename -- "$0")" >&2
   exit 1
 }
 

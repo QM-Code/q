@@ -1,6 +1,6 @@
 *
 !.gitignore
-!install-q.sh
+!install.sh
 !start-q.sh
 !AmazonQ.md
 !README.md
