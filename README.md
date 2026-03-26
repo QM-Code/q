@@ -29,7 +29,7 @@ Optional flags:
 
 ```
 -n <name>    Choose a symlink name other than q-sandbox
--f           Overwrite an existing installation file with that name
+-f           Overwrite existing file with same name as symlink
 ```
 
 The installation script will do the following:
@@ -41,9 +41,9 @@ The installation script will do the following:
 5. Set the sandbox user's primary group to your primary group, then make directories under `<q-home>` mode `770` and regular files mode `660` so both accounts can update them.
 6. Create a `q-sandbox` symlink in `~/.local/bin` if that directory is on your `PATH`, otherwise in `~/bin` if that is on your `PATH`, otherwise directly in your home directory.
 
-## Running `start-q.sh`
+## Running `q-sandbox`
 
-The installed `start-q.sh` does the following:
+The installed `q-sandbox` launcher does the following:
 
 1. Checks whether the sandbox user is already logged in to Amazon `q`
 2. Runs `q login` only if needed
