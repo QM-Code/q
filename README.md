@@ -32,7 +32,6 @@ The installation script will do the following:
 3. Copy your local Amazon `q` state to `<q-home>` if it exists.
 4. Copy `start-q.sh`, `AmazonQ.md`, and `README.md` to `<q-home>`.
 5. Set the sandbox user's primary group to your primary group, then make directories under `<q-home>` mode `770` and regular files mode `660` so both accounts can update them.
-6. Make `start-q.sh` read/execute-only so it is less likely to be edited accidentally.
 
 ## Running `start-q.sh`
 
