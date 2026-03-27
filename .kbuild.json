@@ -1,0 +1,10 @@
+{
+  "project": {
+    "title": "Amazon Q Sandbox",
+    "id": "amazonq"
+  },
+  "git": {
+    "url": "https://github.com/QM-Code/q",
+    "auth": "git@github.com:QM-Code/q.git"
+  }
+}
